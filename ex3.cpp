@@ -2,7 +2,9 @@
 #include <iostream>
 #include <random>
 #include <vector>
+#include <cmath>
 #include "vec3.hpp"
+
 
 struct Target {
     Vec3 pos;
@@ -19,6 +21,7 @@ std::vector<Target> spawnTargets(int count, std::mt19937& rng){
     std::vector<Target> targets;
     std::uniform_real_distribution<double> xDist(-WALL_HALF_WIDTH, WALL_HALF_WIDTH);
     std::uniform_real_distribution<double> yDist(-WALL_HALF_HEIGHT, WALL_HALF_HEIGHT);
+    targets.reserve(static_cast<std::size_t>(count));
 
     for (int i = 0; i < count; ++i) {
         Target t;
@@ -37,24 +40,30 @@ bool removeAt(std::vector<Target>& targets, std::size_t index) {
     if (index >= targets.size()) {
         return false;
     }
-    targets.erase(targets.begin() + index);
+    targets.erase(targets.begin() + static_cast<std::ptrdiff_t>(index));
     return true;
 }
 
 void removeDead(std::vector<Target>& targets) {
-    targets.erase(std::remove_if(targets.begin(), targets.end(), [](const Target& t) { return !t.alive; }), targets.end());
+       for (std::size_t i = 0; i < targets.size(); ) {
+       if (!targets[i].alive) {
+           targets.erase(targets.begin() + static_cast<std::ptrdiff_t>(i));
+       } else {
+           ++i;
+       }
+   }
 }
 
 int countAlive(const std::vector<Target>& targets) {
-    return std::count_if(targets.begin(), targets.end(), [](const Target& t) { return t.alive; });
+    return static_cast<int>(std::count_if(targets.begin(), targets.end(), [](const Target& t) { return t.alive; }));
 }
 
-// ---- tests ----
+
 void check(bool ok, const char* name) {
     std::cout << (ok ? "PASS  " : "FAIL  ") << name << "\n";
 }
 
-int main() {
+void runTests() {
     std::mt19937 rng(12345);   // fixed seed: same numbers every run, so tests are repeatable
 
     std::vector<Target> targets = spawnTargets(10, rng);
@@ -69,6 +78,20 @@ int main() {
         }
     }
     check(inBounds, "spawn positions in bounds");
+    targets[2].alive = false;
+    targets[5].alive = false;
+    targets[7].alive = false;
+    check(countAlive(targets) == 7, "count alive");
+    removeDead(targets);
+    check(targets.size() == 7, "remove dead");
+    check(countAlive(targets) == 7, "count alive after remove dead");
+    check(removeAt(targets, 0), "remove at index 0");
+    check(targets.size() == 6, "size after remove at index 0");
+    check(removeAt(targets, 999), "remove at last index");
+    check(targets[0].alive, "first target still alive");
+}
 
-    // TODO: more checks (see below)
+int main() {
+    runTests();
+    return 0;
 }
