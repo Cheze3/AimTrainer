@@ -3,14 +3,13 @@
 #include <iostream>
 #include "geometry.hpp"
 
+bool approxEqual(double a, double b, double tol = 1e-9) { return std::fabs(a - b) < tol; }
+
 void check(bool ok, const char* name) {
     std::cout << (ok ? "PASS  " : "FAIL  ") << name << "\n";
 }
 
-bool approxEqual(double a, double b, double tol = 1e-9) { return std::fabs(a - b) < tol; }
-
-
-int main() {
+void runTests() {
     Vec3 origin = {0, 0, 0};
     Vec3 dir = {0, 0, -1};
     double tHit;
@@ -23,4 +22,13 @@ int main() {
     check(rayHitsSphere(origin, {0, 0, -2}, {0, 0, -10}, 0.3, tHit) && approxEqual(tHit, 4.85), "unnormalized dir");
     check(rayHitsSphere(origin, {1, 0, -10}, {1, 0, -10}, 0.3, tHit)
       && approxEqual(tHit, 1.0 - 0.3 / std::sqrt(101.0)), "off-axis dir through center");
+}
+
+
+int main() {
+    Vec3 origin = {0, 0, 0};
+    Vec3 dir = {0, 0, -1};
+    double tHit;
+
+    runTests();
 }
