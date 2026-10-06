@@ -1,6 +1,21 @@
 #include <glad/gl.h>      // must come before the GLFW include
 #include <GLFW/glfw3.h>
 #include <cstdio>
+#include "camera.hpp"
+
+struct InputState {
+    double dx = 0, dy = 0;
+    double lastX = 0, lastY = 0;
+    bool first = true;
+};
+
+static void cursorCallback(GLFWwindow* w, double x, double y) {
+    InputState* in = static_cast<InputState*>(glfwGetWindowUserPointer(w));
+    if (in->first) { in->lastX = x; in->lastY = y; in->first = false; }
+    in->dx += x - in->lastX;      // accumulate, never overwrite
+    in->dy += y - in->lastY;
+    in->lastX = x; in->lastY = y;
+}
 
 int main() {
     if (!glfwInit()) {
@@ -32,6 +47,21 @@ int main() {
     }
     std::printf("OpenGL %s\n", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
 
+        InputState input;
+    glfwSetWindowUserPointer(window, &input);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported())
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    else
+        std::printf("raw mouse motion NOT supported on this system\n");
+    input.first = true;
+    glfwSetCursorPosCallback(window, cursorCallback);
+
+    // Hardcoded until the settings file is wired in
+    const double dpi = 800.0, cm360 = 35.0;
+    const double dpc = degPerCount(cm360, dpi);
+    Camera cam;
+
     double previous = glfwGetTime();
     double lastReport = previous;
     int frames = 0;
@@ -45,6 +75,9 @@ int main() {
         glfwPollEvents();
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GLFW_TRUE);
+
+        applyMouseDelta(cam, input.dx, input.dy, dpc);
+        input.dx = input.dy = 0.0;
 
         int fbw = 0, fbh = 0;
         glfwGetFramebufferSize(window, &fbw, &fbh);   // pixels, not window units (Retina)
