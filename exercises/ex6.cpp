@@ -122,7 +122,8 @@ bool approxEqual(double a, double b, double tol = 1e-9) {
 bool writeFile(const std::string& path, const std::string& text) {
     std::ofstream f(path);
     f << text;
-    return static_cast<bool>(f);
+    f.close();
+    return !f.fail();
 }
 
 bool equalSettings(const Settings& a, const Settings& b) {
